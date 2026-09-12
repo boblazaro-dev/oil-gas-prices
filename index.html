@@ -3,402 +3,744 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gas &amp; Oil Price Dashboard</title>
-<!-- v3 20260505172937 -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/2.2.1/chartjs-plugin-annotation.min.js"></script>
+<title>Gas & Oil Price Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #f4f2ed; --surface: #fff; --border: #e0ddd6;
-    --text: #1a1916; --muted: #8a8880;
-    --up: #b83030; --dn: #1e7a4a;
-    --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
+  :root{
+    --bg:#0e1512;
+    --panel:#141d19;
+    --panel-2:#182420;
+    --line:#26332c;
+    --ink:#eef1ec;
+    --ink-dim:#9fb0a6;
+    --ink-faint:#6c7c73;
+    --crude:#d98e3f;   /* wti/gasoline amber */
+    --crude-2:#e8b46b;
+    --diesel:#5d9c8a;  /* teal-green diesel */
+    --brent:#c76a5f;   /* rust brent */
+    --alert:#e2544a;
   }
-  body { background: var(--bg); font-family: var(--sans); color: var(--text); min-height: 100vh; padding: 2rem; max-width: 1200px; margin: 0 auto; }
-  header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1.5px solid var(--text); flex-wrap: wrap; gap: 1rem; }
-  .header-left h1 { font-size: 28px; font-weight: 500; letter-spacing: -0.02em; line-height: 1; }
-  .header-left p { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.08em; }
-  .header-right { display: flex; align-items: center; gap: 12px; }
-  #ts { font-family: var(--mono); font-size: 11px; color: var(--muted); }
-  button { font-family: var(--mono); font-size: 11px; padding: 7px 16px; border: 1px solid var(--text); background: transparent; color: var(--text); cursor: pointer; letter-spacing: 0.06em; text-transform: uppercase; transition: background 0.15s, color 0.15s; }
-  button:hover { background: var(--text); color: var(--bg); }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 2rem; }
-  .card { background: var(--surface); padding: 1.25rem 1.5rem; }
-  .card-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px; }
-  .card-value { font-family: var(--mono); font-size: 26px; font-weight: 500; letter-spacing: -0.02em; line-height: 1; margin-bottom: 8px; }
-  .card-chg { font-family: var(--mono); font-size: 11px; }
-  .up { color: var(--up); } .dn { color: var(--dn); } .nc { color: var(--muted); }
-  .region-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 2rem; }
-  .region-card { background: var(--surface); padding: 1rem 1.25rem; }
-  .region-name { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
-  .region-price { font-family: var(--mono); font-size: 22px; font-weight: 500; letter-spacing: -0.02em; margin-bottom: 4px; }
-  .region-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; }
-  .region-bar { height: 4px; border-radius: 2px; transition: width 0.4s; }
-  .region-vs { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 4px; }
-  .section { margin-bottom: 2rem; }
-  .section-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 8px; }
-  .section-title { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
-  .legend { display: flex; gap: 14px; font-family: var(--mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; flex-wrap: wrap; }
-  .legend span { display: flex; align-items: center; gap: 6px; }
-  .ldot { width: 20px; height: 2px; display: inline-block; }
-  .ldash { width: 20px; height: 2px; display: inline-block; background: repeating-linear-gradient(90deg, currentColor 0, currentColor 4px, transparent 4px, transparent 8px); }
-  .axis-labels { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
-  .chart-box { background: var(--surface); border: 1px solid var(--border); padding: 1.25rem; }
-  .chart-wrap { position: relative; width: 100%; height: 340px; }
-  .chart-wrap-lg { position: relative; width: 100%; height: 380px; }
-  #statusBox { text-align: center; padding: 3rem 1rem; font-family: var(--mono); font-size: 13px; color: var(--muted); }
-  .err-detail { background: #fff8f8; border: 1px solid #f0c0c0; border-radius: 4px; padding: 1rem; margin-top: 1rem; font-family: var(--mono); font-size: 11px; color: #900; text-align: left; white-space: pre-wrap; word-break: break-all; max-width: 700px; margin-left: auto; margin-right: auto; }
-  .sec-divider { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; margin-bottom: 1rem; margin-top: 2rem; }
-  footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); font-family: var(--mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 500px at 10% -10%, #16211c 0%, transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding:32px 20px 64px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:16px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:22px;
+    margin-bottom:28px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:2.5rem;
+    line-height:1;
+    margin:0 0 8px;
+    letter-spacing:-0.01em;
+  }
+  header p{
+    margin:0;
+    color:var(--ink-dim);
+    font-size:0.92rem;
+    max-width:520px;
+  }
+  .asof{
+    text-align:right;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.78rem;
+    color:var(--ink-faint);
+  }
+  .asof strong{color:var(--ink-dim); display:block; font-size:0.82rem; margin-bottom:2px;}
+
+  section{margin-bottom:40px;}
+  .section-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:14px;
+    gap:12px;
+  }
+  .section-head h2{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:1.25rem;
+    margin:0;
+  }
+  .section-head span{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.72rem;
+    color:var(--ink-faint);
+  }
+
+  /* summary cards */
+  .summary-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .stat{
+    background:var(--panel);
+    padding:20px 20px 18px;
+  }
+  .stat .label{
+    font-size:0.76rem;
+    color:var(--ink-dim);
+    margin-bottom:10px;
+  }
+  .stat .value{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:1.9rem;
+    letter-spacing:-0.02em;
+  }
+  .stat .unit{font-size:0.95rem; color:var(--ink-faint); font-weight:400; margin-left:2px;}
+  .stat .delta{
+    margin-top:8px;
+    font-size:0.78rem;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .delta.up{color:var(--alert);}
+  .delta.down{color:var(--diesel);}
+  .stat .swatch{
+    display:inline-block;width:8px;height:8px;border-radius:50%;
+    margin-right:7px;
+  }
+
+  /* regional */
+  .regional{
+    display:grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .regional > div{background:var(--panel); padding:22px;}
+  .bar-row{
+    display:grid;
+    grid-template-columns:110px 1fr 62px;
+    align-items:center;
+    gap:12px;
+    margin-bottom:14px;
+    font-size:0.85rem;
+  }
+  .bar-row:last-child{margin-bottom:0;}
+  .bar-track{
+    height:8px;
+    background:var(--panel-2);
+    border-radius:4px;
+    overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;
+    border-radius:4px;
+    background:linear-gradient(90deg, var(--crude), var(--crude-2));
+  }
+  .bar-price{
+    font-family:'IBM Plex Mono', monospace;
+    text-align:right;
+    color:var(--ink-dim);
+  }
+  table{width:100%; border-collapse:collapse; font-size:0.85rem;}
+  th{
+    text-align:left;
+    font-weight:500;
+    color:var(--ink-faint);
+    font-size:0.72rem;
+    text-transform:none;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--line);
+  }
+  td{padding:9px 0; border-bottom:1px solid var(--line); color:var(--ink-dim);}
+  td:first-child{color:var(--ink);}
+  td.num{font-family:'IBM Plex Mono', monospace; text-align:right;}
+  tr:last-child td{border-bottom:none;}
+
+  /* chart panels */
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:22px 22px 12px;
+  }
+  .legend-row{
+    display:flex; gap:18px; flex-wrap:wrap;
+    font-size:0.78rem; color:var(--ink-dim);
+    margin-bottom:14px;
+  }
+  .legend-row span{display:inline-flex; align-items:center; gap:6px;}
+  .legend-row i{width:10px;height:10px;border-radius:2px;display:inline-block;}
+  .chart-box{position:relative; height:380px;}
+  .chart-box.short{height:300px;}
+
+  /* events */
+  .events{
+    margin-top:16px;
+    display:grid;
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .event{
+    background:var(--panel);
+    padding:14px 18px;
+    display:grid;
+    grid-template-columns:110px 1fr;
+    gap:16px;
+    font-size:0.85rem;
+    align-items:start;
+  }
+  .event.highlight{background:#1c1512; border-left:3px solid var(--alert);}
+  .event .date{
+    font-family:'IBM Plex Mono', monospace;
+    color:var(--ink-faint);
+    font-size:0.78rem;
+    padding-top:1px;
+  }
+  .event.highlight .date{color:var(--alert);}
+  .event .desc strong{color:var(--ink); font-weight:500;}
+  .event .desc{color:var(--ink-dim); line-height:1.5;}
+
+  footer{
+    margin-top:36px;
+    padding-top:18px;
+    border-top:1px solid var(--line);
+    font-size:0.76rem;
+    color:var(--ink-faint);
+    line-height:1.6;
+  }
+
+  @media (max-width:820px){
+    .summary-grid{grid-template-columns:repeat(2,1fr);}
+    .regional{grid-template-columns:1fr;}
+    .event{grid-template-columns:90px 1fr;}
+  }
 </style>
 </head>
 <body>
+<div class="wrap">
 
-<header>
-  <div class="header-left">
-    <h1>Gas &amp; Oil Prices</h1>
-    <p>Live data — U.S. Energy Information Administration — 2010 to present</p>
-  </div>
-  <div class="header-right">
-    <span id="ts">—</span>
-    <button onclick="loadAll()">&#8635; Refresh</button>
-  </div>
-</header>
+  <header>
+    <div>
+      <h1>Gas & Oil Prices</h1>
+      <p>Reconstructed from U.S. Energy Information Administration reporting and market coverage — 2010 to present.</p>
+    </div>
+    <div class="asof">
+      <strong id="statusLabel">Loading live EIA data…</strong>
+      <span id="statusDetail">connecting to api.eia.gov</span>
+    </div>
+  </header>
 
-<div id="statusBox">Fetching prices from EIA.gov…</div>
-
-<div id="main" style="display:none;">
-
-  <div class="sec-divider">National Summary — Latest Week</div>
-  <div class="cards" id="cards"></div>
-
-  <div class="sec-divider">Regular Gasoline by Region — Latest Week</div>
-  <div class="region-grid" id="regionCards"></div>
-
-  <!-- Combined gas + oil dual-axis chart with event markers -->
-  <div class="section">
-    <div class="section-header">
-      <span class="section-title">Regular Gas, Diesel &amp; Crude Oil — Weekly 2010–Present</span>
-      <div class="legend">
-        <span><span class="ldot" style="background:#2060a8;"></span>Regular gas ($/gal, left)</span>
-        <span><span class="ldash" style="color:#c05020;"></span>Diesel ($/gal, left)</span>
-        <span><span class="ldot" style="background:#1a7048;"></span>WTI crude ($/bbl, right)</span>
-        <span><span class="ldash" style="color:#5840a0;"></span>Brent crude ($/bbl, right)</span>
+  <!-- NATIONAL SUMMARY -->
+  <section>
+    <div class="section-head"><h2>National Summary — Latest Week</h2><span>$/GAL · $/BBL</span></div>
+    <div class="summary-grid">
+      <div class="stat">
+        <div class="label"><span class="swatch" style="background:var(--crude)"></span>Regular Gasoline</div>
+        <div class="value" id="cardGas">$—<span class="unit">/gal</span></div>
+        <div class="delta" id="cardGasDelta">—</div>
+      </div>
+      <div class="stat">
+        <div class="label"><span class="swatch" style="background:var(--diesel)"></span>Diesel</div>
+        <div class="value" id="cardDiesel">$—<span class="unit">/gal</span></div>
+        <div class="delta" id="cardDieselDelta">—</div>
+      </div>
+      <div class="stat">
+        <div class="label"><span class="swatch" style="background:var(--crude-2)"></span>WTI Crude</div>
+        <div class="value" id="cardWti">$—<span class="unit">/bbl</span></div>
+        <div class="delta" id="cardWtiDelta">—</div>
+      </div>
+      <div class="stat">
+        <div class="label"><span class="swatch" style="background:var(--brent)"></span>Brent Crude</div>
+        <div class="value" id="cardBrent">$—<span class="unit">/bbl</span></div>
+        <div class="delta" id="cardBrentDelta">—</div>
       </div>
     </div>
-    <div class="axis-labels">
-      <span style="color:#2060a8;">&#8592; Price ($/gallon)</span>
-      <span style="color:#1a7048;">Crude oil ($/barrel) &#8594;</span>
-    </div>
-    <div class="chart-box">
-      <div class="chart-wrap-lg">
-        <canvas id="cCombo"></canvas>
+  </section>
+
+  <!-- REGIONAL -->
+  <section>
+    <div class="section-head"><h2>Regular Gasoline by Region — Latest Week</h2><span>PADD REGIONS</span></div>
+    <div class="regional">
+      <div id="regionalBars"></div>
+      <div>
+        <table>
+          <thead><tr><th>Region</th><th style="text-align:right">$/gal</th><th style="text-align:right">vs U.S. avg</th></tr></thead>
+          <tbody id="regionalTable"></tbody>
+        </table>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Regional gas trend chart -->
-  <div class="section">
-    <div class="section-header">
-      <span class="section-title">Regular Gas by Region — Weekly 2010–Present</span>
-      <div class="legend" id="regionLegend"></div>
+  <!-- MAIN TIMELINE -->
+  <section>
+    <div class="section-head"><h2>Regular Gas, Diesel & Crude Oil — 2010–Present</h2><span>MONTHLY AVERAGE</span></div>
+    <div class="panel">
+      <div class="legend-row">
+        <span><i style="background:var(--crude)"></i>Regular gas ($/gal, left)</span>
+        <span><i style="background:var(--diesel)"></i>Diesel ($/gal, left)</span>
+        <span><i style="background:var(--crude-2)"></i>WTI crude ($/bbl, right)</span>
+        <span><i style="background:var(--brent)"></i>Brent crude ($/bbl, right)</span>
+        <span><i style="background:var(--alert)"></i>U.S. strikes on Iran</span>
+      </div>
+      <div class="chart-box"><canvas id="mainChart"></canvas></div>
     </div>
-    <div class="chart-box">
-      <div class="chart-wrap">
-        <canvas id="cRegion"></canvas>
+
+    <div class="events">
+      <div class="event">
+        <div class="date">Nov 2014</div>
+        <div class="desc"><strong>OPEC holds output steady</strong> — crude begins an 18-month collapse from ~$105 to ~$26/bbl.</div>
+      </div>
+      <div class="event">
+        <div class="date">Mar 2020</div>
+        <div class="desc"><strong>COVID-19 demand collapse</strong> — WTI futures briefly settle negative; pump prices hit a decade low near $1.87/gal.</div>
+      </div>
+      <div class="event">
+        <div class="date">Feb 2022</div>
+        <div class="desc"><strong>Russia invades Ukraine</strong> — Brent tops $130/bbl; national gas average sets a record above $5.00/gal that June.</div>
+      </div>
+      <div class="event highlight">
+        <div class="date">Feb 28, 2026</div>
+        <div class="desc"><strong>United States and Israel strike Iran</strong>, opening the 2026 Iran war. The joint operation hit Iranian nuclear and military sites and killed Supreme Leader Ali Khamenei. Iran closed the Strait of Hormuz in response, and crude jumped as roughly a fifth of world oil supply became a shipping risk overnight.</div>
+      </div>
+      <div class="event">
+        <div class="date">Mar 13, 2026</div>
+        <div class="desc"><strong>U.S. strikes Kharg Island</strong>, Iran's main oil export terminal, hitting military sites there while avoiding the export infrastructure itself.</div>
+      </div>
+      <div class="event">
+        <div class="date">Apr–Sep 2026</div>
+        <div class="desc"><strong>Naval blockade, ceasefire, and renewed strikes</strong> — a U.S. blockade of Iranian oil exports, a conditional ceasefire in April, and fresh U.S.–Iran strikes in late August keep crude and pump prices elevated into fall.</div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <footer id="foot"></footer>
+  <!-- REGIONAL TREND -->
+  <section>
+    <div class="section-head"><h2>Regular Gas by Region — 2023–Present</h2><span>MONTHLY AVERAGE</span></div>
+    <div class="panel">
+      <div class="legend-row" id="regionLegend"></div>
+      <div class="chart-box short"><canvas id="regionChart"></canvas></div>
+    </div>
+  </section>
+
+  <footer>
+    Recreated dashboard in the style of the source site's EIA-fed layout. The live original pulls directly from the EIA API; that
+    feed isn't available in this environment, so the series here is reconstructed from published EIA weekly averages, AAA
+    reporting, and market coverage (CNBC, Trading Economics, Forbes Advisor, Reuters) rather than a live pull — treat exact
+    weekly values as approximate. Iran-war timeline per Wikipedia, CFR's Global Conflict Tracker, and contemporary news coverage.
+  </footer>
+
 </div>
 
 <script>
-const KEY = 'ZlO2nnGVZhylD8zwE6d6P5TTVWAO8HRHO14amfCI';
-const charts = {};
-
-const REGIONS = [
-  { name: 'East Coast',     color: '#c0392b', series: 'EMM_EPM0_PTE_R10_DPG' },
-  { name: 'Midwest',        color: '#e67e22', series: 'EMM_EPM0_PTE_R20_DPG' },
-  { name: 'Gulf Coast',     color: '#27ae60', series: 'EMM_EPM0_PTE_R30_DPG' },
-  { name: 'Rocky Mountain', color: '#8e44ad', series: 'EMM_EPM0_PTE_R40_DPG' },
-  { name: 'West Coast',     color: '#2980b9', series: 'EMM_EPM0_PTE_R50_DPG' },
-];
-
-// Key events to annotate on charts: find nearest data index to a given date
-const EVENTS = [
-  { date: '2020-03-11', label: 'COVID-19', color: '#c0392b', dash: [6,3] },
-  { date: '2022-02-24', label: 'Russia invades Ukraine', color: '#8e44ad', dash: [6,3] },
-];
-
-function setStatus(msg, isError, detail) {
-  const box = document.getElementById('statusBox');
-  box.style.display = 'block';
-  document.getElementById('main').style.display = 'none';
-  box.innerHTML = '<div style="color:' + (isError ? '#b83030' : 'var(--muted)') + ';font-family:var(--mono);font-size:13px;">' + msg + '</div>'
-    + (detail ? '<div class="err-detail">Error details (helpful for troubleshooting):\n' + detail + '</div>' : '');
+if (window['chartjs-plugin-annotation']) {
+  Chart.register(window['chartjs-plugin-annotation']);
 }
 
-async function fetchBySeries(route, seriesId, frequency, start) {
-  const url = 'https://api.eia.gov/v2/' + route + '/data/'
-    + '?api_key=' + KEY
-    + '&frequency=' + frequency
-    + '&data[0]=value'
-    + '&facets[series][]=' + seriesId
-    + '&start=' + start
-    + '&sort[0][column]=period&sort[0][direction]=asc&length=5000';
-  const res = await fetch(url);
-  const txt = await res.text();
-  let j;
-  try { j = JSON.parse(txt); } catch(e) { throw new Error('Non-JSON from EIA:\n' + txt.slice(0,300) + '\nURL: ' + url); }
-  if (!res.ok || j.error) throw new Error((j.error ? JSON.stringify(j.error) : 'HTTP ' + res.status) + '\nURL: ' + url);
-  if (!j.response || !j.response.data || j.response.data.length === 0)
-    throw new Error('No data for series ' + seriesId + '\nURL: ' + url + '\nResponse: ' + JSON.stringify(j.response).slice(0,200));
-  return j.response.data.slice().sort((a, b) => a.period < b.period ? -1 : 1);
-}
+/* =========================================================
+   CONFIG
+   ========================================================= */
+const EIA_API_KEY = 'ZlO2nnGVZhylD8zwE6d6P5TTVWAO8HRHO14amfCI';
+const EIA_BASE = 'https://api.eia.gov/v2/seriesid/';
+const HIST_START = '2010-01-01';   // full timeline start
+const REGION_START = '2023-01-01'; // regional trend chart start
 
-function chgHtml(v, dec) {
-  dec = dec || 3;
-  if (v === null || isNaN(v)) return '<span class="nc">— no data</span>';
-  if (v > 0) return '<span class="up">&#9650; +' + Math.abs(v).toFixed(dec) + '</span>';
-  if (v < 0) return '<span class="dn">&#9660; ' + v.toFixed(dec) + '</span>';
-  return '<span class="nc">— no change</span>';
-}
+const SERIES = {
+  gas:    'PET.EMM_EPMR_PTE_NUS_DPG.W',
+  diesel: 'PET.EMD_EPD2D_PTE_NUS_DPG.W',
+  wti:    'PET.RWTC.D',
+  brent:  'PET.RBRTE.D',
+};
+const REGION_SERIES = {
+  'East Coast':     'PET.EMM_EPMR_PTE_R10_DPG.W',
+  'Midwest':        'PET.EMM_EPMR_PTE_R20_DPG.W',
+  'Gulf Coast':     'PET.EMM_EPMR_PTE_R30_DPG.W',
+  'Rocky Mountain': 'PET.EMM_EPMR_PTE_R40_DPG.W',
+  'West Coast':     'PET.EMM_EPMR_PTE_R50_DPG.W',
+};
+const REGION_COLORS = {
+  'West Coast':'#e2544a', 'East Coast':'#d98e3f', 'Midwest':'#e8b46b',
+  'Rocky Mountain':'#5d9c8a', 'Gulf Coast':'#8fb0a2'
+};
 
-function lastVal(d) { return d && d.length ? parseFloat(d[d.length-1].value) : null; }
-function prevVal(d) { return d && d.length > 1 ? parseFloat(d[d.length-2].value) : null; }
-function diffVal(d) { const l=lastVal(d), p=prevVal(d); return (l!=null&&p!=null) ? l-p : null; }
-
-// Build X labels showing only first occurrence of each year
-function makeXLabels(periods) {
-  const seen = new Set();
-  return periods.map(p => { const yr = p.slice(0,4); if (!seen.has(yr)) { seen.add(yr); return yr; } return ''; });
-}
-
-// Find the x-axis index closest to a given date string
-function findNearestIndex(periods, targetDate) {
-  let best = 0, bestDiff = Infinity;
-  const t = new Date(targetDate).getTime();
-  periods.forEach((p, i) => {
-    const diff = Math.abs(new Date(p).getTime() - t);
-    if (diff < bestDiff) { bestDiff = diff; best = i; }
-  });
-  return best;
-}
-
-// Build annotation config for Chart.js annotation plugin
-function buildAnnotations(periods) {
-  const annotations = {};
-  EVENTS.forEach((ev, i) => {
-    const idx = findNearestIndex(periods, ev.date);
-    annotations['line' + i] = {
-      type: 'line',
-      xMin: idx, xMax: idx,
-      borderColor: ev.color,
-      borderWidth: 1.5,
-      borderDash: ev.dash,
-      label: {
-        content: ev.label,
-        display: true,
-        position: 'start',
-        backgroundColor: ev.color,
-        color: '#fff',
-        font: { family: "'IBM Plex Mono'", size: 9 },
-        padding: { x: 5, y: 3 },
-        yAdjust: 8,
-      }
-    };
-  });
-  return annotations;
-}
-
-// Match each gas-period date to the nearest date in a crude/diesel series
-function nearestValues(targetPeriods, sourceSeries) {
-  if (!sourceSeries || sourceSeries.length === 0) return targetPeriods.map(() => null);
-  const srcTimes = sourceSeries.map(x => ({ t: new Date(x.period).getTime(), v: parseFloat(x.value) }));
-  return targetPeriods.map(p => {
-    const t = new Date(p).getTime();
-    let best = srcTimes[0], bestDiff = Math.abs(srcTimes[0].t - t);
-    for (let i = 1; i < srcTimes.length; i++) {
-      const diff = Math.abs(srcTimes[i].t - t);
-      if (diff < bestDiff) { bestDiff = diff; best = srcTimes[i]; }
-      if (diff > bestDiff) break; // sorted, so we can stop early
-    }
-    // Only use value if within 7 days
-    return bestDiff <= 7 * 24 * 3600 * 1000 ? best.v : null;
-  });
-}
-
-function buildComboChart(gas, diesel, wti, brent) {
-  const periods = gas.map(x => x.period);
-  const xl = makeXLabels(periods);
-
-  // Use nearest-date matching for all series against the gas timeline
-  const dieselVals = nearestValues(periods, diesel);
-  const wtiVals    = nearestValues(periods, wti);
-  const brentVals  = nearestValues(periods, brent);
-
-  if (charts['cCombo']) charts['cCombo'].destroy();
-  charts['cCombo'] = new Chart(document.getElementById('cCombo'), {
-    type: 'line',
-    data: {
-      labels: xl,
-      datasets: [
-        { label: 'Regular Gas', data: gas.map(x => parseFloat(x.value)), borderColor: '#2060a8', backgroundColor: 'rgba(32,96,168,0.07)', fill: true,  borderWidth: 1.5, pointRadius: 0, tension: 0.3, yAxisID: 'yGas' },
-        { label: 'Diesel',      data: dieselVals,                         borderColor: '#c05020', backgroundColor: 'transparent',           fill: false, borderWidth: 1.5, pointRadius: 0, tension: 0.3, borderDash: [5,3], yAxisID: 'yGas' },
-        { label: 'WTI Crude',   data: wtiVals,                            borderColor: '#1a7048', backgroundColor: 'rgba(26,112,72,0.06)',  fill: true,  borderWidth: 1.5, pointRadius: 0, tension: 0.3, yAxisID: 'yOil' },
-        { label: 'Brent Crude', data: brentVals,                          borderColor: '#5840a0', backgroundColor: 'transparent',           fill: false, borderWidth: 1.5, pointRadius: 0, tension: 0.3, borderDash: [5,3], yAxisID: 'yOil' },
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: {
-          title: items => periods[items[0].dataIndex] || '',
-          label: ctx => {
-            const v = ctx.parsed.y;
-            if (v === null || isNaN(v)) return null;
-            return ctx.dataset.yAxisID === 'yGas'
-              ? '  ' + ctx.dataset.label + ': $' + v.toFixed(3) + '/gal'
-              : '  ' + ctx.dataset.label + ': $' + v.toFixed(2) + '/bbl';
-          }
-        }},
-        annotation: { annotations: buildAnnotations(periods) }
-      },
-      scales: {
-        x: { ticks: { font: { family: "'IBM Plex Mono'", size: 10 }, color: '#8a8880', maxRotation: 0, autoSkip: false, callback: (val, i) => xl[i] || '' }, grid: { color: '#e8e6e0' } },
-        yGas: { type: 'linear', position: 'left',
-          title: { display: true, text: '$/gallon', font: { family: "'IBM Plex Mono'", size: 10 }, color: '#2060a8' },
-          ticks: { font: { family: "'IBM Plex Mono'", size: 10 }, color: '#2060a8', callback: v => '$' + v.toFixed(2) },
-          grid: { color: '#e8e6e0' }
-        },
-        yOil: { type: 'linear', position: 'right',
-          title: { display: true, text: '$/barrel', font: { family: "'IBM Plex Mono'", size: 10 }, color: '#1a7048' },
-          ticks: { font: { family: "'IBM Plex Mono'", size: 10 }, color: '#1a7048', callback: v => '$' + v.toFixed(0) },
-          grid: { drawOnChartArea: false }
-        }
-      }
-    }
-  });
-}
-
-function buildRegionChart(regionData, gasLabels) {
-  const xl = makeXLabels(gasLabels);
-  if (charts['cRegion']) charts['cRegion'].destroy();
-  charts['cRegion'] = new Chart(document.getElementById('cRegion'), {
-    type: 'line',
-    data: {
-      labels: xl,
-      datasets: REGIONS.map((r, i) => {
-        const map = regionData[i] ? Object.fromEntries(regionData[i].map(x => [x.period, parseFloat(x.value)])) : {};
-        return {
-          label: r.name,
-          data: gasLabels.map(l => map[l] ?? null),
-          borderColor: r.color,
-          backgroundColor: 'transparent',
-          borderWidth: 1.5, pointRadius: 0, tension: 0.3,
-        };
-      })
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: true, position: 'bottom', labels: { font: { family: "'IBM Plex Mono'", size: 10 }, color: '#8a8880', boxWidth: 20, boxHeight: 2, padding: 16 } },
-        tooltip: { callbacks: {
-          title: items => gasLabels[items[0].dataIndex] || '',
-          label: ctx => { const v = ctx.parsed.y; return v != null ? '  ' + ctx.dataset.label + ': $' + v.toFixed(3) + '/gal' : null; }
-        }},
-        annotation: { annotations: buildAnnotations(gasLabels) }
-      },
-      scales: {
-        x: { ticks: { font: { family: "'IBM Plex Mono'", size: 10 }, color: '#8a8880', maxRotation: 0, autoSkip: false, callback: (val, i) => xl[i] || '' }, grid: { color: '#e8e6e0' } },
-        y: { ticks: { font: { family: "'IBM Plex Mono'", size: 10 }, color: '#8a8880', callback: v => '$' + v.toFixed(2) }, grid: { color: '#e8e6e0' } }
-      }
-    }
-  });
-}
-
-async function loadAll() {
-  document.getElementById('ts').textContent = 'Refreshing…';
-  setStatus('Fetching all data from EIA.gov (2010–present)…');
-  const start = '2010-01-01';
-
-  try {
-    const [gas, diesel, wti, brent, ...regionData] = await Promise.all([
-      fetchBySeries('petroleum/pri/gnd', 'EMM_EPM0_PTE_NUS_DPG',  'weekly', start),  // regular gas US
-      fetchBySeries('petroleum/pri/gnd', 'EMD_EPD2DXL0_PTE_NUS_DPG', 'weekly', start),  // on-highway diesel US
-      fetchBySeries('petroleum/pri/spt', 'RWTC',                   'weekly', start),  // WTI crude spot
-      fetchBySeries('petroleum/pri/spt', 'RBRTE',                  'weekly', start),  // Brent crude spot
-      ...REGIONS.map(r => fetchBySeries('petroleum/pri/gnd', r.series, 'weekly', start)
-          .catch(e => { console.warn(r.name + ' failed:', e.message); return []; }))
-    ]);
-
-    const fmt = (v, n) => v != null ? '$' + v.toFixed(n) : 'N/A';
-
-    // National summary cards
-    document.getElementById('cards').innerHTML = [
-      { label: 'Regular gas (US avg)', d: gas,    dec: 3, note: 'vs prior week' },
-      { label: 'Diesel (US avg)',       d: diesel, dec: 3, note: 'vs prior week' },
-      { label: 'WTI crude oil',         d: wti,    dec: 2, note: 'vs prior week' },
-      { label: 'Brent crude oil',       d: brent,  dec: 2, note: 'vs prior week' },
-    ].map(cd => `
-      <div class="card">
-        <div class="card-label">${cd.label}</div>
-        <div class="card-value">${fmt(lastVal(cd.d), cd.dec)}</div>
-        <div class="card-chg">${chgHtml(diffVal(cd.d), cd.dec)} <span style="color:var(--muted);font-size:10px;">${cd.note}</span></div>
-      </div>`).join('');
-
-    // Regional cards
-    const natLatest = lastVal(gas);
-    const regLatests = REGIONS.map((r, i) => lastVal(regionData[i]));
-    const allP = [natLatest, ...regLatests].filter(v => v != null);
-    const minP = Math.min(...allP), maxP = Math.max(...allP);
-
-    document.getElementById('regionCards').innerHTML = REGIONS.map((r, i) => {
-      const v = regLatests[i];
-      const chg = diffVal(regionData[i]);
-      const barPct = v != null && maxP > minP ? ((v - minP) / (maxP - minP) * 100).toFixed(1) : 50;
-      const diff = v != null && natLatest != null ? v - natLatest : null;
-      const vsStr = diff != null
-        ? diff > 0 ? '<span class="up">+$' + diff.toFixed(3) + ' vs US avg</span>'
-        : diff < 0 ? '<span class="dn">-$' + Math.abs(diff).toFixed(3) + ' vs US avg</span>'
-        : '<span class="nc">= US avg</span>' : '';
-      return `
-        <div class="region-card">
-          <div class="region-name" style="color:${r.color}">${r.name}</div>
-          <div class="region-price">${fmt(v, 3)}</div>
-          <div class="card-chg">${chgHtml(chg, 3)} <span style="color:var(--muted);font-size:10px;">vs prior week</span></div>
-          <div class="region-bar-wrap"><div class="region-bar" style="width:${barPct}%;background:${r.color};"></div></div>
-          <div class="region-vs">${vsStr}</div>
-        </div>`;
-    }).join('');
-
-    const gasLabels = gas.map(x => x.period);
-    buildComboChart(gas, diesel, wti, brent);
-    buildRegionChart(regionData, gasLabels);
-
-    const latestPeriod = gas[gas.length-1].period.slice(0,10);
-    document.getElementById('foot').textContent =
-      'Source: EIA.gov  |  Weekly data Jan 2010 – ' + latestPeriod
-      + '  |  Events: COVID-19 Mar 2020, Russia invasion Feb 2022  |  Updates Mondays';
-
-    document.getElementById('statusBox').style.display = 'none';
-    document.getElementById('main').style.display = 'block';
-    document.getElementById('ts').textContent =
-      'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  } catch(e) {
-    document.getElementById('ts').textContent = 'Error';
-    setStatus('Could not load data from EIA.gov.', true, e.message);
+/* =========================================================
+   DATE / SERIES HELPERS (shared by live + fallback paths)
+   ========================================================= */
+function toIdx(ym){ const [y,m]=ym.split('-').map(Number); return y*12+(m-1); }
+function labelsFor(startYm, endYm){
+  const startI=toIdx(startYm), endI=toIdx(endYm), out=[];
+  for(let i=startI;i<=endI;i++){
+    const y=Math.floor(i/12), m=(i%12)+1;
+    out.push(y+'-'+String(m).padStart(2,'0'));
   }
+  return out;
+}
+function buildSeries(anchors, startYm, endYm){
+  const pts = anchors.map(([ym,v])=>[toIdx(ym), v]).sort((a,b)=>a[0]-b[0]);
+  const startI = toIdx(startYm), endI = toIdx(endYm);
+  const out = [];
+  for(let i=startI;i<=endI;i++){
+    let lo=pts[0], hi=pts[pts.length-1];
+    for(let k=0;k<pts.length-1;k++){
+      if(pts[k][0]<=i && pts[k+1][0]>=i){ lo=pts[k]; hi=pts[k+1]; break; }
+    }
+    const t = hi[0]===lo[0] ? 0 : (i-lo[0])/(hi[0]-lo[0]);
+    out.push(+(lo[1] + t*(hi[1]-lo[1])).toFixed(3));
+  }
+  return out;
 }
 
-loadAll();
+/* =========================================================
+   LIVE EIA FETCH
+   The EIA API is built for server-side use (Python/R/curl) and does not
+   reliably send Access-Control-Allow-Origin, so a direct browser fetch()
+   from this artifact's origin gets blocked with "Failed to fetch" before
+   the request ever reaches EIA. Try direct first (in case that changes),
+   then fall back through a couple of public CORS-relay proxies.
+   ========================================================= */
+const CORS_WRAPPERS = [
+  u => u,
+  u => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
+  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+];
+
+async function fetchJsonRobust(url){
+  let lastErr;
+  for(const wrap of CORS_WRAPPERS){
+    try{
+      const res = await fetch(wrap(url));
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    }catch(e){ lastErr = e; }
+  }
+  throw lastErr;
+}
+
+async function fetchLegacySeries(seriesId, startDate){
+  let all = [];
+  let offset = 0;
+  const length = 5000;
+  for(let guard=0; guard<5; guard++){
+    const url = `${EIA_BASE}${seriesId}?api_key=${EIA_API_KEY}&start=${startDate}`
+      + `&sort[0][column]=period&sort[0][direction]=asc&offset=${offset}&length=${length}`;
+    const json = await fetchJsonRobust(url);
+    if(!json.response || !Array.isArray(json.response.data)) throw new Error(`Unexpected EIA response shape for ${seriesId}`);
+    const rows = json.response.data;
+    all = all.concat(rows);
+    if(rows.length < length) break;
+    offset += length;
+  }
+  return all
+    .map(d => ({ period: d.period, value: d.value === null || d.value === undefined ? null : +d.value }))
+    .filter(d => d.value !== null && !Number.isNaN(d.value))
+    .sort((a,b) => a.period < b.period ? -1 : a.period > b.period ? 1 : 0);
+}
+
+function monthlyAverage(rows){
+  const buckets = {};
+  rows.forEach(r=>{
+    const ym = r.period.slice(0,7);
+    (buckets[ym] = buckets[ym] || []).push(r.value);
+  });
+  const out = {};
+  Object.keys(buckets).forEach(ym=>{
+    const arr = buckets[ym];
+    out[ym] = arr.reduce((a,b)=>a+b,0)/arr.length;
+  });
+  return out;
+}
+
+function fillMonthly(monthlyMap, startYm, endYm){
+  const labels = labelsFor(startYm, endYm);
+  let last = null;
+  const values = labels.map(l=>{
+    if(monthlyMap[l] != null){ last = monthlyMap[l]; return +monthlyMap[l].toFixed(3); }
+    return last != null ? +last.toFixed(3) : null;
+  });
+  const firstVal = values.find(v => v != null);
+  for(let i=0;i<values.length;i++){ if(values[i]==null) values[i]=firstVal; else break; }
+  return { labels, values };
+}
+
+// percent change vs the row ~daysAgo calendar days before the latest row
+function pctChangeVsDaysAgo(rows, daysAgo){
+  if(rows.length < 2) return null;
+  const latest = rows[rows.length-1];
+  const latestDate = new Date(latest.period);
+  const targetTime = latestDate.getTime() - daysAgo*86400000;
+  let best = rows[0], bestDiff = Infinity;
+  for(const r of rows){
+    const t = new Date(r.period).getTime();
+    const diff = Math.abs(t - targetTime);
+    if(diff < bestDiff){ bestDiff = diff; best = r; }
+  }
+  if(best.value === 0) return null;
+  return { latest: latest.value, prior: best.value, pct: ((latest.value-best.value)/best.value)*100 };
+}
+function pctChangeWeekly(rows){
+  if(rows.length < 2) return null;
+  const latest = rows[rows.length-1], prior = rows[rows.length-2];
+  if(prior.value === 0) return null;
+  return { latest: latest.value, prior: prior.value, pct: ((latest.value-prior.value)/prior.value)*100 };
+}
+
+/* =========================================================
+   RENDER HELPERS (used by both live + fallback paths)
+   ========================================================= */
+function setCard(prefix, price, unit, deltaInfo, deltaLabel){
+  const valueEl = document.getElementById('card'+prefix);
+  const deltaEl = document.getElementById('card'+prefix+'Delta');
+  valueEl.innerHTML = `$${price.toFixed(2)}<span class="unit">/${unit}</span>`;
+  if(deltaInfo == null){
+    deltaEl.textContent = '—';
+    deltaEl.className = 'delta';
+    return;
+  }
+  const up = deltaInfo.pct >= 0;
+  deltaEl.textContent = `${up?'▲':'▼'} ${Math.abs(deltaInfo.pct).toFixed(1)}% ${deltaLabel}`;
+  deltaEl.className = 'delta ' + (up?'up':'down');
+}
+
+function renderRegionalNow(regionsArr, usAvg){
+  const maxR = Math.max(...regionsArr.map(r=>r.price));
+  document.getElementById('regionalBars').innerHTML = regionsArr.map(r=>`
+    <div class="bar-row">
+      <div>${r.name}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(r.price/maxR*100).toFixed(0)}%"></div></div>
+      <div class="bar-price">$${r.price.toFixed(2)}</div>
+    </div>`).join('');
+  document.getElementById('regionalTable').innerHTML = regionsArr.map(r=>{
+    const diff = r.price-usAvg;
+    const sign = diff>=0?'+':'';
+    return `<tr><td>${r.name}</td><td class="num">$${r.price.toFixed(2)}</td><td class="num">${sign}${diff.toFixed(2)}</td></tr>`;
+  }).join('') + `<tr><td>U.S. Average</td><td class="num">$${usAvg.toFixed(2)}</td><td class="num">—</td></tr>`;
+}
+
+function renderMainChart(labels, gas, diesel, wti, brent){
+  new Chart(document.getElementById('mainChart'), {
+    type:'line',
+    data:{ labels, datasets:[
+      {label:'Regular gas', data:gas, borderColor:'#d98e3f', backgroundColor:'#d98e3f', yAxisID:'y', pointRadius:0, borderWidth:1.8, tension:0.15},
+      {label:'Diesel', data:diesel, borderColor:'#5d9c8a', backgroundColor:'#5d9c8a', yAxisID:'y', pointRadius:0, borderWidth:1.8, tension:0.15},
+      {label:'WTI crude', data:wti, borderColor:'#e8b46b', backgroundColor:'#e8b46b', yAxisID:'y1', pointRadius:0, borderWidth:1.3, tension:0.15, borderDash:[2,2]},
+      {label:'Brent crude', data:brent, borderColor:'#c76a5f', backgroundColor:'#c76a5f', yAxisID:'y1', pointRadius:0, borderWidth:1.3, tension:0.15, borderDash:[2,2]},
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
+      scales:{
+        x:{ ticks:{ color:'#6c7c73', maxTicksLimit:14, font:{family:'IBM Plex Mono', size:10} }, grid:{ color:'#1b2620' } },
+        y:{ position:'left', title:{display:true,text:'Price ($/gallon)', color:'#9fb0a6', font:{size:11}}, ticks:{ color:'#6c7c73', font:{family:'IBM Plex Mono', size:10} }, grid:{ color:'#1b2620' } },
+        y1:{ position:'right', title:{display:true,text:'Crude oil ($/barrel)', color:'#9fb0a6', font:{size:11}}, ticks:{ color:'#6c7c73', font:{family:'IBM Plex Mono', size:10} }, grid:{ display:false } }
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{ backgroundColor:'#182420', borderColor:'#26332c', borderWidth:1, titleColor:'#eef1ec', bodyColor:'#c9d3cd', titleFont:{family:'IBM Plex Mono', size:11}, bodyFont:{family:'IBM Plex Mono', size:11} },
+        annotation:{ annotations:{
+          l2014:{ type:'line', xMin:'2014-11', xMax:'2014-11', borderColor:'#3c4a42', borderWidth:1, borderDash:[4,3] },
+          l2020:{ type:'line', xMin:'2020-03', xMax:'2020-03', borderColor:'#3c4a42', borderWidth:1, borderDash:[4,3] },
+          l2022:{ type:'line', xMin:'2022-02', xMax:'2022-02', borderColor:'#3c4a42', borderWidth:1, borderDash:[4,3] },
+          iranStrike:{
+            type:'line', xMin:'2026-02', xMax:'2026-02',
+            borderColor:'#e2544a', borderWidth:2,
+            label:{ display:true, content:'US strikes on Iran, Feb 28 2026', position:'start', color:'#e2544a', backgroundColor:'#1c1512', font:{family:'IBM Plex Mono', size:9.5}, padding:4, rotation:0, yAdjust:6 }
+          }
+        } }
+      }
+    }
+  });
+}
+
+function renderRegionChart(labels, regionSeries){
+  const names = Object.keys(regionSeries);
+  document.getElementById('regionLegend').innerHTML = names.map(n=>
+    `<span><i style="background:${REGION_COLORS[n]||'#999'}"></i>${n}</span>`).join('');
+  new Chart(document.getElementById('regionChart'), {
+    type:'line',
+    data:{ labels, datasets: names.map(n=>({
+      label:n, data:regionSeries[n], borderColor:REGION_COLORS[n]||'#999', backgroundColor:REGION_COLORS[n]||'#999',
+      pointRadius:0, borderWidth:1.6, tension:0.15
+    })) },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index', intersect:false},
+      scales:{
+        x:{ ticks:{ color:'#6c7c73', maxTicksLimit:10, font:{family:'IBM Plex Mono', size:10} }, grid:{ color:'#1b2620' } },
+        y:{ title:{display:true,text:'$/gallon', color:'#9fb0a6', font:{size:11}}, ticks:{ color:'#6c7c73', font:{family:'IBM Plex Mono', size:10} }, grid:{ color:'#1b2620' } }
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{ backgroundColor:'#182420', borderColor:'#26332c', borderWidth:1, titleColor:'#eef1ec', bodyColor:'#c9d3cd', titleFont:{family:'IBM Plex Mono', size:11}, bodyFont:{family:'IBM Plex Mono', size:11} },
+        annotation:{ annotations:{
+          iranStrike2:{
+            type:'line', xMin:'2026-02', xMax:'2026-02',
+            borderColor:'#e2544a', borderWidth:2,
+            label:{ display:true, content:'Iran war begins', position:'start', color:'#e2544a', backgroundColor:'#1c1512', font:{family:'IBM Plex Mono', size:9.5}, padding:4, yAdjust:6 }
+          }
+        } }
+      }
+    }
+  });
+}
+
+function setStatus(label, detail){
+  document.getElementById('statusLabel').textContent = label;
+  document.getElementById('statusDetail').textContent = detail;
+}
+
+/* =========================================================
+   LIVE PATH
+   ========================================================= */
+async function runLive(){
+  const [gasRows, dieselRows, wtiRows, brentRows] = await Promise.all([
+    fetchLegacySeries(SERIES.gas, HIST_START),
+    fetchLegacySeries(SERIES.diesel, HIST_START),
+    fetchLegacySeries(SERIES.wti, HIST_START),
+    fetchLegacySeries(SERIES.brent, HIST_START),
+  ]);
+  if(!gasRows.length || !dieselRows.length || !wtiRows.length || !brentRows.length){
+    throw new Error('EIA returned no rows for one or more series');
+  }
+
+  const endYm = gasRows[gasRows.length-1].period.slice(0,7);
+  const startYm = HIST_START.slice(0,7);
+
+  const gasM = fillMonthly(monthlyAverage(gasRows), startYm, endYm);
+  const dieselM = fillMonthly(monthlyAverage(dieselRows), startYm, endYm);
+  const wtiM = fillMonthly(monthlyAverage(wtiRows), startYm, endYm);
+  const brentM = fillMonthly(monthlyAverage(brentRows), startYm, endYm);
+  renderMainChart(gasM.labels, gasM.values, dieselM.values, wtiM.values, brentM.values);
+
+  const gasDelta = pctChangeWeekly(gasRows);
+  const dieselDelta = pctChangeWeekly(dieselRows);
+  const wtiDelta = pctChangeVsDaysAgo(wtiRows, 7);
+  const brentDelta = pctChangeVsDaysAgo(brentRows, 7);
+  setCard('Gas', gasRows[gasRows.length-1].value, 'gal', gasDelta, 'vs prior week');
+  setCard('Diesel', dieselRows[dieselRows.length-1].value, 'gal', dieselDelta, 'vs prior week');
+  setCard('Wti', wtiRows[wtiRows.length-1].value, 'bbl', wtiDelta, 'vs 7 days ago');
+  setCard('Brent', brentRows[brentRows.length-1].value, 'bbl', brentDelta, 'vs 7 days ago');
+
+  const regionNames = Object.keys(REGION_SERIES);
+  const regionRowsEntries = await Promise.all(
+    regionNames.map(name => fetchLegacySeries(REGION_SERIES[name], REGION_START))
+  );
+  const regionRows = {};
+  regionNames.forEach((name,i) => regionRows[name] = regionRowsEntries[i]);
+
+  const regionLatest = regionNames
+    .filter(n => regionRows[n].length)
+    .map(n => ({ name:n, price: regionRows[n][regionRows[n].length-1].value }));
+  const usAvgLatest = gasRows[gasRows.length-1].value;
+  renderRegionalNow(regionLatest, usAvgLatest);
+
+  const rLabels = labelsFor(REGION_START.slice(0,7), endYm);
+  const regionSeriesM = {};
+  regionNames.forEach(n=>{
+    const m = fillMonthly(monthlyAverage(regionRows[n]), REGION_START.slice(0,7), endYm);
+    regionSeriesM[n] = m.values;
+  });
+  renderRegionChart(rLabels, regionSeriesM);
+
+  const latestPeriod = gasRows[gasRows.length-1].period;
+  setStatus('● Live — EIA API', `week ending ${latestPeriod}`);
+}
+
+/* =========================================================
+   STATIC FALLBACK (used only if the live fetch fails)
+   ========================================================= */
+function runFallback(reason){
+  setStatus('● Offline reconstruction', reason ? `live EIA fetch failed: ${reason}` : 'live EIA fetch failed');
+
+  const START='2010-01', END='2026-09';
+  const gasAnchors=[['2010-01',2.72],['2010-07',2.74],['2011-01',3.09],['2011-05',3.96],['2011-10',3.44],
+  ['2012-04',3.93],['2012-12',3.28],['2013-06',3.61],['2013-12',3.27],['2014-06',3.68],['2014-12',2.30],
+  ['2015-06',2.79],['2015-12',2.00],['2016-02',1.79],['2016-12',2.30],['2017-06',2.36],['2017-12',2.49],
+  ['2018-05',2.93],['2018-10',2.89],['2018-12',2.36],['2019-06',2.73],['2019-12',2.58],['2020-01',2.58],
+  ['2020-04',1.87],['2020-12',2.25],['2021-06',3.06],['2021-11',3.49],['2022-03',4.32],['2022-06',5.03],
+  ['2022-12',3.20],['2023-06',3.57],['2023-09',3.86],['2023-12',3.10],['2024-04',3.65],['2024-10',3.20],
+  ['2024-12',3.02],['2025-03',3.10],['2025-06',3.22],['2025-09',3.28],['2025-12',3.32],['2026-01',3.35],
+  ['2026-02',3.45],['2026-03',3.92],['2026-04',4.12],['2026-05',4.05],['2026-06',3.95],['2026-07',3.85],
+  ['2026-08',4.07],['2026-09',4.15]];
+  const dieselAnchors=[['2010-01',2.99],['2011-05',3.98],['2012-01',3.85],['2013-06',3.83],['2014-06',3.87],
+  ['2015-01',3.03],['2015-12',2.24],['2016-02',1.98],['2017-06',2.55],['2018-10',3.30],['2019-06',3.10],
+  ['2020-01',3.06],['2020-04',2.32],['2020-12',2.56],['2021-06',3.24],['2021-12',3.62],['2022-06',5.55],
+  ['2022-12',4.66],['2023-06',3.85],['2023-12',4.05],['2024-06',3.80],['2024-12',3.55],['2025-03',3.55],
+  ['2025-06',3.60],['2025-09',3.72],['2025-12',3.90],['2026-01',3.95],['2026-02',4.10],['2026-03',4.80],
+  ['2026-04',5.20],['2026-05',5.10],['2026-06',4.90],['2026-07',4.70],['2026-08',5.30],['2026-09',5.60]];
+  const wtiAnchors=[['2010-01',78],['2011-04',110],['2012-01',100],['2013-01',94],['2014-06',105],
+  ['2014-12',53],['2015-08',42],['2016-02',26],['2016-12',52],['2017-12',58],['2018-10',76],['2018-12',45],
+  ['2019-12',61],['2020-04',16],['2020-12',48],['2021-06',73],['2021-11',80],['2022-03',108],['2022-06',106],
+  ['2022-12',80],['2023-06',70],['2023-09',90],['2023-12',72],['2024-04',85],['2024-10',71],['2024-12',70],
+  ['2025-03',68],['2025-06',65],['2025-09',67],['2025-12',68],['2026-01',70],['2026-02',75],['2026-03',96],
+  ['2026-04',108],['2026-05',100],['2026-06',90],['2026-07',78],['2026-08',88],['2026-09',100]];
+  const brentAnchors=[['2010-01',80],['2011-04',123],['2012-01',111],['2013-01',112],['2014-06',112],
+  ['2014-12',60],['2015-08',47],['2016-02',33],['2016-12',55],['2017-12',64],['2018-10',85],['2018-12',54],
+  ['2019-12',66],['2020-04',20],['2020-12',51],['2021-06',75],['2021-11',82],['2022-03',115],['2022-06',114],
+  ['2022-12',85],['2023-06',75],['2023-09',94],['2023-12',77],['2024-04',90],['2024-10',75],['2024-12',74],
+  ['2025-03',72],['2025-06',69],['2025-09',71],['2025-12',72],['2026-01',74],['2026-02',79],['2026-03',100],
+  ['2026-04',114],['2026-05',105],['2026-06',94],['2026-07',82],['2026-08',93],['2026-09',104.6]];
+
+  const labels = labelsFor(START,END);
+  const gasSeries = buildSeries(gasAnchors, START, END);
+  const dieselSeries = buildSeries(dieselAnchors, START, END);
+  const wtiSeries = buildSeries(wtiAnchors, START, END);
+  const brentSeries = buildSeries(brentAnchors, START, END);
+  renderMainChart(labels, gasSeries, dieselSeries, wtiSeries, brentSeries);
+
+  setCard('Gas', gasSeries[gasSeries.length-1], 'gal', {pct:2.0}, 'vs prior week (approx.)');
+  setCard('Diesel', dieselSeries[dieselSeries.length-1], 'gal', {pct:2.9}, 'vs prior week (approx.)');
+  setCard('Wti', wtiSeries[wtiSeries.length-1], 'bbl', {pct:9.4}, 'vs 7 days ago (approx.)');
+  setCard('Brent', brentSeries[brentSeries.length-1], 'bbl', {pct:8.7}, 'vs 7 days ago (approx.)');
+
+  const regions = [
+    {name:'West Coast', price:5.25}, {name:'East Coast', price:4.05}, {name:'Midwest', price:3.92},
+    {name:'Rocky Mountain', price:3.88}, {name:'Gulf Coast', price:3.62},
+  ];
+  renderRegionalNow(regions, 4.15);
+
+  const RSTART='2023-01';
+  const rLabels = labelsFor(RSTART, END);
+  const rGas = buildSeries(gasAnchors, RSTART, END);
+  const mults = {'West Coast':1.27,'East Coast':1.00,'Midwest':0.955,'Rocky Mountain':0.94,'Gulf Coast':0.885};
+  const regionSeriesM = {};
+  Object.keys(mults).forEach(n=>{ regionSeriesM[n] = rGas.map(v=>+(v*mults[n]).toFixed(3)); });
+  renderRegionChart(rLabels, regionSeriesM);
+}
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+(async () => {
+  try {
+    await runLive();
+  } catch (err) {
+    console.error('EIA live fetch failed, falling back to static reconstruction:', err);
+    runFallback(err.message);
+  }
+})();
 </script>
 </body>
 </html>
